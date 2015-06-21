@@ -1,0 +1,101 @@
+==================================================================
+
+# Human Activity Recognition Using Smartphones Dataset
+
+## Getting and Cleaning Data
+
+### June 21, 2015 - Nishanth Merwin
+
+==================================================================
+
+### Introduction
+
+The goals are the assignment are to create a script called run_analysis.R that does the following tasks:
+
+1. Merges the training and the test sets to create one data set.
+
+2. Extracts only the measurements on the mean and standard deviation for each measurement. 
+
+3. Uses descriptive activity names to name the activities in the data set
+
+4. Appropriately labels the data set with descriptive variable names. 
+
+5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+This document will serve to annotate the run_analsys.R code to demonstrate exactly how it achieves the above goals.
+
+### Analysis
+
+This first chunk of code loads in all of the data needed to complete the assignment while also labelling the dataset with descriptive labels (task 4). The first step of this chunk loads in the column headings, which are then used to descriptively annotate both the training and test data sets' variables as they are read using the read.table function. Both the index and labels are added to each of these data sets. The labels represent the type of activity (i.e. walking, sitting, etc.) while the index is an integer value from 1-30 assigned to each individual participant in the experiment. 
+
+```{r eval=FALSE}
+## Loads the col names into R
+features <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/features.txt")
+feature <- features[,2]
+
+## Training variables
+train <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/train/X_train.txt",col.names=(feature),colClasses="numeric")
+train_index <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/train/subject_train.txt",colClasses="numeric")
+train_lab <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/train/y_train.txt",colClasses="numeric")
+## Adds the index and labels
+train$index <- as.numeric(unlist(train_index))
+train$label <- as.numeric(unlist(train_lab))
+
+## Test variables
+test <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/test/X_test.txt",col.names=(feature),colClasses="numeric")
+test_index <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/test/subject_test.txt",colClasses="numeric")
+test_lab <- read.table("C:/Users/Nishanth/Documents/Coursera/ass2/test/y_test.txt",colClasses="numeric")
+## Adds the index and labels
+test$index <- as.numeric(unlist(test_index))
+test$label <- as.numeric(unlist(test_lab))
+```
+
+
+This next piece of code merges the test and training dataset to create a larger dataset simply called data. (task 1)
+
+```{r eval=FALSE}
+## Merges the data sets
+row.names(test) <- as.integer(seq(1,2947,by=1))
+row.names(train) <- as.integer(seq(2948,10299,by=1))
+data <- rbind(train,test)
+```
+
+
+Next, I extracted only the variables that represented either the mean or standard deviation. (task 2)
+
+```{r eval=FALSE}
+## Using the pattern matching, I created a vector where only the mean and std of each variable was recorded.
+logic <- (grepl("mean()",feature,fixed=T)) | (grepl("std",feature,fixed=T))
+logic[562:563] <- c(T,T)
+data_s <- data[,logic]
+```
+
+The following code replaces the numeric activity label with a character string that names each activity (task 3)
+```{r eval=FALSE}
+## Renaming the labels with the actual names of the activity
+labels <- as.character((read.table("C:/Users/Nishanth/Documents/Coursera/ass2/activity_labels.txt"))[,2])
+data_s$label <- factor(data_s$label,labels=labels)
+```
+
+Lastly, a new dataset is created called "tidy" that follows the principles of a tidy dataset. (task 5) Although not strictly required, it is recommended by Hadley Wickham that independent variables, set at the start of the experiment (such as the type of activity and the index), are placed at the left hand side of the data set. Thus, this new data set now follows all of the principles of a tidy data set.
+
+```{r eval=FALSE}
+## Creating the new data set
+library(dplyr)
+data_tidy <- data_s %>%
+    tbl_df %>%
+        select(index,label,1:68)
+
+write.table(data_tidy, file = "tidy.txt",row.names=F)
+```
+
+In the future, if this file needs to be read, it can be done so with the following code:
+```{r eval=FALSE}
+## Read new dataset
+ tidy_data <- read.table("tidy.txt", header = TRUE)
+```
+
+
+
+### Citations
+Wickham, H. Tidy data. (2014). at <http://courses.had.co.nz.s3-website-us-east-1.amazonaws.com/12-rice-bdsi/slides/07-tidy-data.pdf>
